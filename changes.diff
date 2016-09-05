@@ -1,0 +1,91 @@
+diff --git a/include/synchronizer.h b/include/synchronizer.h
+index 326a39f..751d35f 100644
+--- a/include/synchronizer.h
++++ b/include/synchronizer.h
+@@ -10,6 +10,11 @@ __BEGIN_SYS
+ 
+ class Synchronizer_Common
+ {
++private:
++    typedef Ordered_Queue<Thread, Thread::Priority> Queue;
++    Queue _sleeping;
++
++
+ protected:
+     Synchronizer_Common() {}
+ 
+@@ -22,12 +27,43 @@ protected:
+     void begin_atomic() { Thread::lock(); }
+     void end_atomic() { Thread::unlock(); }
+ 
+-    void sleep() { Thread::yield(); } // implicit unlock()
+-    void wakeup() { end_atomic(); }
+-    void wakeup_all() { end_atomic(); }
++    void sleep() {
++        begin_atomic();
++        if(!Thread::_ready.empty()) {
++            Thread * prev = Thread::_running;
++            prev->_state = Thread::WAITING;
++            _sleeping.insert(&prev->_link);
++            Thread::_running = Thread::_ready.remove()->object();
++            Thread::_running->_state = Thread::RUNNING;
++            Thread::dispatch(prev, Thread::_running);
++        } else {
++            Thread::idle();
++        }
++        end_atomic();
++    }
++
++    void wakeup() {
++        begin_atomic();
++        if (!_sleeping.empty())
++            wakeupThread();
++        end_atomic();
++    }
++
++    void wakeup_all() {
++        begin_atomic();
++        while (!_sleeping.empty())
++            wakeupThread();
++        end_atomic();
++    }
++
++private:
++    void wakeupThread() {
++        Thread * waking = _sleeping.remove()->object();
++        waking->_state = Thread::READY;
++        Thread::_ready.insert(&waking->_link);
++    }
+ };
+ 
+ __END_SYS
+ 
+ #endif
+-
+diff --git a/src/abstraction/mutex.cc b/src/abstraction/mutex.cc
+index 7345f5c..2b8fdb0 100644
+--- a/src/abstraction/mutex.cc
++++ b/src/abstraction/mutex.cc
+@@ -22,8 +22,7 @@ void Mutex::lock()
+ 
+     begin_atomic();
+     if(tsl(_locked))
+-        while(tsl(_locked))
+-            sleep(); // implicit end_atomic()
++        sleep(); // implicit end_atomic()
+     else
+         end_atomic();
+ }
+diff --git a/src/abstraction/semaphore.cc b/src/abstraction/semaphore.cc
+index a2e8f7a..febe2d6 100644
+--- a/src/abstraction/semaphore.cc
++++ b/src/abstraction/semaphore.cc
+@@ -21,7 +21,7 @@ void Semaphore::p()
+     db<Synchronizer>(TRC) << "Semaphore::p(this=" << this << ",value=" << _value << ")" << endl;
+ 
+     fdec(_value);
+-    while(_value < 0)
++    if(_value < 0)
+         sleep();
+ }
+ 
