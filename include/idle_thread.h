@@ -24,7 +24,7 @@ private:
 public:
 
     IdleThread() :
-    Thread(Thread::Configuration(Thread::READY, -1), &do_nothing) {}
+    Thread(Thread::Configuration(state, priority), &do_nothing) {}
 };
 
 __END_SYS

@@ -179,7 +179,7 @@ void Thread::exit(int status)
     db<Thread>(TRC) << "Thread::exit(status=" << status << ") [running=" << running() << "]" << endl;
 
     while (_ready.size() == 1 && !_suspended.empty())
-        yield(); // implicit unlock();
+        yield();  // idle thread  // implicit unlock();
 
     lock();
 
