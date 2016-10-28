@@ -8,6 +8,14 @@
 
 __BEGIN_SYS
 
+class ThreadAndPriority {
+public:
+    ThreadAndPriority(Thread* thread, Thread::Priority priority) :
+        thread(thread), originalPriority(priority) {}
+    Thread* thread;
+    Thread::Priority originalPriority;
+};
+
 class Synchronizer_Common
 {
 protected:
@@ -29,12 +37,61 @@ protected:
     void sleep() { Thread::sleep(&_queue); }
     void wakeup() { Thread::wakeup(&_queue); }
     void wakeup_all() { Thread::wakeup_all(&_queue); }
-
+public:
 protected:
+
     Queue _queue;
+    List<ThreadAndPriority> _running;
+
+    void resolve_priority() {
+        Thread* running = Thread::_running;
+        for(
+            List<ThreadAndPriority>::Iterator i = this->_running.begin();
+            i != this->_running.end(); i++
+        ) {
+            Thread* current = i->object()->thread;
+            Thread::Priority newPriority = running->priority() < current->priority() ?
+                running->priority() : current->priority();
+
+            current->priority(newPriority);
+
+            if (current->_state == Thread::READY) {
+                Thread::_ready.remove(current);
+                Thread::_ready.insert(&current->_link);
+            }
+        }
+    }
+
+    void revert_priority_and_leave() {
+        Thread* running = Thread::_running;
+
+        for(
+            List<ThreadAndPriority>::Iterator i = this->_running.begin();
+            i != this->_running.end(); i++
+        ) {
+            Thread* current = i->object()->thread;
+            if (current == running) {
+                Thread::Priority originalPriority = i->object()->originalPriority;
+                running->priority(originalPriority);
+                if (running->_state == Thread::READY) {
+                    Thread::_ready.remove(running);
+                    Thread::_ready.insert(&running->_link);
+                }
+                this->_running.remove(i->object());
+                break;
+            }
+        }
+    }
+
+    void enter() {
+        Thread* running = Thread::_running;
+        Thread::Priority priority = running->priority();
+        ThreadAndPriority* tp (new ThreadAndPriority(running, priority));
+        this->_running.insert_head(new List<ThreadAndPriority>::Element(tp));
+    }
+
 };
 
 __END_SYS
 
 #endif
-

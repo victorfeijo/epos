@@ -22,17 +22,24 @@ void Semaphore::p()
 
     begin_atomic();
     if(fdec(_value) < 1)
+    {
+        resolve_priority();
         sleep(); // implicit end_atomic()
-    else
+    }
+    else {
+        enter();
         end_atomic();
+    }
 }
 
 
 void Semaphore::v()
 {
+    //SOMEWHERE IN THIS FUNCTION call revert_priority
     db<Synchronizer>(TRC) << "Semaphore::v(this=" << this << ",value=" << _value << ")" << endl;
 
     begin_atomic();
+    revert_priority_and_leave();
     if(finc(_value) < 0)
         wakeup();  // implicit end_atomic()
     else
