@@ -6,7 +6,7 @@
 #=========================================================================
 # PATHS
 #=========================================================================
-EPOS=/home/m.legat/code/epos
+EPOS=/home/matteus/workspace/epos
 TMP=/tmp
 INC=$EPOS/include
 SRC=$EPOS/src
