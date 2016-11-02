@@ -37,7 +37,7 @@ protected:
     void sleep() { Thread::sleep(&_queue); }
     void wakeup() { Thread::wakeup(&_queue); }
     void wakeup_all() { Thread::wakeup_all(&_queue); }
-public:
+
 protected:
 
     Queue _queue;
