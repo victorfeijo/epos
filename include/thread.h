@@ -71,7 +71,7 @@ public:
     const volatile State & state() const { return _state; }
 
     const volatile Priority & priority() const { return _link.rank(); }
-    void priority(const Priority & p);
+    void priority(const Priority & p) { _link.rank(p); }
 
     int join();
     void pass();
