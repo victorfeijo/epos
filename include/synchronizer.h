@@ -86,8 +86,8 @@ protected:
     void enter() {
         Thread* running = Thread::_running;
         Thread::Priority priority = running->priority();
-        ThreadAndPriority* tp (new (kmalloc(sizeof(ThreadAndPriority))) ThreadAndPriority(running, priority));
-        this->_running.insert_head(new (kmalloc(sizeof(List<ThreadAndPriority>::Element))) List<ThreadAndPriority>::Element(tp));
+        ThreadAndPriority* tp (new ThreadAndPriority(running, priority));
+        this->_running.insert_head(new List<ThreadAndPriority>::Element(tp));
     }
 
 };
