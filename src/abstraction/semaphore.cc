@@ -35,7 +35,6 @@ void Semaphore::p()
 
 void Semaphore::v()
 {
-    //SOMEWHERE IN THIS FUNCTION call revert_priority
     db<Synchronizer>(TRC) << "Semaphore::v(this=" << this << ",value=" << _value << ")" << endl;
 
     begin_atomic();
